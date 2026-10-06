@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v31 · ENTRY FIXED</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v32 · PHASE DEBUG</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -232,6 +232,11 @@ scene.add(ring);
 const title = flatText('O R U N', { size:72, color:'#39d97e', glowColor:'#1fae5c', h:0.20 });
 title.position.set(0, 1.68, TABLE.z - 0.35); title.scale.multiplyScalar(1.6); scene.add(title);
 const hint = flatText('park a card · hit ROLL', { size:44, color:'#b9cfc2', backing:'rgba(2,8,5,0.55)', h:0.14 });
+const dbgPhase = flatText('phase: boot', { size:36, color:'#ff9', backing:'rgba(20,0,0,0.6)', h:0.08 });
+dbgPhase.position.set(0.55, SURFACE_Y + 0.02, 0.15);
+dbgPhase.rotation.x = -Math.PI/2;
+scene.add(dbgPhase);
+function updateDbgPhase() { setFlatLabel(dbgPhase, 'phase: ' + game.phase, '#ff9'); }
 hint.position.set(0, 1.22, TABLE.z); scene.add(hint);
 
 /* ---- flat HEALTH label on the felt ---- */
@@ -1246,7 +1251,7 @@ function selectFighter(key) {
     if (game.campaign && game.campaign.upgrades.plating) addArmor('player');
     spawnSpecialToken();
     setPhase('intro', 'The Griot: ' + FIGHTER_DATA[key].name + ' approaches...');
-    setTimeout(() => { if (!game.result && game.phase === 'intro') startPlayerTurn(true); }, 1400);
+    setTimeout(() => { if (!game.result) startPlayerTurn(true); }, 1400);
   });
 }
 rival.position.set(0, SURFACE_Y, -0.98);
@@ -2135,6 +2140,7 @@ function checkWin() {
 /* ================= turn flow ================= */
 function setPhase(p, line) {
   game.phase = p;
+  try { updateDbgPhase(); } catch(e) {}
   if (line) griot.say(line);
   setStepLabel();
 }
