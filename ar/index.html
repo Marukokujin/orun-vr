@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v8</h1>
+  <h1>ORUN — TABLE AR v9</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -208,9 +208,30 @@ TABLE_COLORS.forEach((col, i) => {
     0.04, () => { felt.material.color.setHex(col); });
 });
 
-// Color swatches for hands
+// Hand color + style
+let handColor = 0xffffff;
+let handStyle = 'solid'; // solid | ghost | clear
+function applyHandStyle() {
+  for (const h of xrHands) {
+    h.traverse((o) => {
+      if (o.isMesh && o.material) {
+        o.material.color.setHex(handColor);
+        if (handStyle === 'solid') {
+          o.material.transparent = false;
+          o.material.opacity = 1.0;
+        } else if (handStyle === 'ghost') {
+          o.material.transparent = true;
+          o.material.opacity = 0.35;
+        } else { // clear
+          o.material.transparent = true;
+          o.material.opacity = 0.0;
+        }
+        o.material.needsUpdate = true;
+      }
+    });
+  }
+}
 const HAND_COLORS = [0xffffff, 0x39d97e, 0x4488ff, 0xd4af37, 0xff5040];
-const handSwatches = [];
 HAND_COLORS.forEach((col, i) => {
   const s = new THREE.Mesh(
     new THREE.CircleGeometry(0.025, 24),
@@ -219,17 +240,18 @@ HAND_COLORS.forEach((col, i) => {
   s.rotation.x = -Math.PI/2;
   s.position.set(-0.12 + i * 0.06, 0.001, -0.12);
   adjGroup.add(s);
-  handSwatches.push({ mesh:s, color:col });
   addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
-    0.04, () => {
-      for (const h of xrHands) {
-        h.traverse((o) => {
-          if (o.isMesh && o.material) {
-            o.material.color.setHex(col);
-          }
-        });
-      }
-    });
+    0.04, () => { handColor = col; applyHandStyle(); });
+});
+// style buttons: SOLID | GHOST | CLEAR
+const handStyles = [['SOLID','solid',0x1fae5c], ['GHOST','ghost',0x4488ff], ['CLEAR','clear',0x666666]];
+handStyles.forEach(([label, style, btnCol], i) => {
+  const b = makeButton(label, btnCol);
+  b.position.set(-0.12 + i * 0.12, 0, -0.19);
+  b.scale.set(0.8, 0.8, 0.8);
+  adjGroup.add(b);
+  addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
+    0.06, () => { handStyle = style; applyHandStyle(); });
 });
 
 let tableY = TABLE.topY, tableZ = TABLE.z;
