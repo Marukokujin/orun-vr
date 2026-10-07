@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v5</h1>
+  <h1>ORUN — TABLE AR v6</h1>
   <p>Green table in your room. Yellow TABLE button reveals UP/DOWN/FWD/BACK.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -102,14 +102,17 @@ const touchables = [];
 function addTouchable(getPos, r, onTouch) {
   touchables.push({ getPos, r, onTouch, inside:new Set() });
 }
-function getHandSources() {
-  const session = renderer.xr.getSession();
-  if (!session) return [];
-  const hands = [];
-  for (const source of session.inputSources) {
-    if (source.hand) hands.push(source);
-  }
-  return hands;
+// Three.js hand objects — the right way
+const xrHands = [renderer.xr.getHand(0), renderer.xr.getHand(1)];
+for (const h of xrHands) scene.add(h);
+const _jv = new THREE.Vector3();
+function getFingertip(i, out) {
+  const hand = xrHands[i];
+  if (!hand) return false;
+  const j = hand.joints && hand.joints['index-finger-tip'];
+  if (!j) return false;
+  try { j.getWorldPosition(out); return true; }
+  catch(e) { return false; }
 }
 const _v = new THREE.Vector3();
 // visible fingertip dots — green when tracking, so you know hands are live
@@ -117,35 +120,27 @@ const fingertipDots = [];
 function updateFingertips() {
   for (const d of fingertipDots) scene.remove(d);
   fingertipDots.length = 0;
-  const hands = getHandSources();
-  for (const source of hands) {
-    let tip;
-    try { tip = source.hand.get('index-finger-tip'); } catch(e) { continue; }
-    if (!tip) continue;
+  for (let i = 0; i < 2; i++) {
     const dot = new THREE.Mesh(
       new THREE.SphereGeometry(0.015, 10, 8),
       new THREE.MeshBasicMaterial({ color:0x00ff88 })
     );
-    try { tip.getWorldPosition(dot.position); } catch(e) { continue; }
+    if (!getFingertip(i, dot.position)) continue;
     scene.add(dot);
     fingertipDots.push(dot);
   }
 }
 function checkTouchables() {
-  const hands = getHandSources();
   for (const t of touchables) {
     let pos;
     try { pos = t.getPos(); } catch(e) { continue; }
-    for (const source of hands) {
-      let tip;
-      try { tip = source.hand.get('index-finger-tip'); } catch(e) { continue; }
-      if (!tip) continue;
-      try { tip.getWorldPosition(_v); } catch(e) { continue; }
+    for (let i = 0; i < 2; i++) {
+      if (!getFingertip(i, _v)) continue;
       const d = _v.distanceTo(pos);
       const isInside = d < t.r;
-      const wasInside = t.inside.has(source);
-      if (isInside && !wasInside) { t.inside.add(source); try { t.onTouch(); } catch(e) {} }
-      else if (!isInside && wasInside) t.inside.delete(source);
+      const wasInside = t.inside.has(i);
+      if (isInside && !wasInside) { t.inside.add(i); try { t.onTouch(); } catch(e) {} }
+      else if (!isInside && wasInside) t.inside.delete(i);
     }
   }
 }
@@ -225,8 +220,8 @@ renderer.setAnimationLoop(() => {
   try { checkTouchables(); } catch(e) {}
   try { updateFingertips(); } catch(e) {}
   blinkT += 0.05;
-  const hands = getHandSources();
-  if (hands.length > 0) {
+  const hand0 = getFingertip(0, _v), hand1 = getFingertip(1, _v);
+  if (hand0 || hand1) {
     blink.material.color.setHex(0x00ff88); // solid green = hands detected
   } else {
     blink.material.color.setHex(Math.sin(blinkT * 3) > 0 ? 0xff3333 : 0x550000); // blinking red = no hands
