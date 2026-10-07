@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v38 · SELECT REBUILT</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v39 · MINIMAL SELECT</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -1236,21 +1236,18 @@ function selectFighter(key) {
   randomizer.active = false;
   randGroup.visible = false;
   currentFighter = key;
-  outlawState = -1;
-  hudFoeKey = null;
-  setFighterName(FIGHTER_DATA[key].name);
-  setFighterPortrait(5);
-  updateRoadmap();
-  updateHealthBars();
-  setPhase('intro', 'The Griot: ' + FIGHTER_DATA[key].name + ' approaches...');
-  showVersus(key, () => {
+  griot.say('Foe locked: ' + FIGHTER_DATA[key].name);
+  // MINIMAL: skip versus splash, skip portraits — straight to duel setup
+  setTimeout(() => {
     if (game.result) return;
-    resetDuel();
-    if (game.campaign && game.campaign.upgrades.plating) addArmor('player');
-    spawnSpecialToken();
-    setPhase('intro', 'The Griot: ' + FIGHTER_DATA[key].name + ' approaches...');
-    setTimeout(() => { if (!game.result) startPlayerTurn(true); }, 1400);
-  });
+    try {
+      resetDuel();
+      setPhase('intro', 'Duel begins!');
+      setTimeout(() => { if (!game.result) startPlayerTurn(true); }, 1000);
+    } catch (err) {
+      griot.say('Setup failed: ' + String(err.message).slice(0, 50));
+    }
+  }, 500);
 }
 rival.position.set(0, SURFACE_Y, -0.98);
 scene.add(rival);
