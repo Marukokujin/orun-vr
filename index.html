@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v35 · ERROR CATCHER</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v36 · TAP TO LOCK</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -232,14 +232,7 @@ scene.add(ring);
 const title = flatText('O R U N', { size:72, color:'#39d97e', glowColor:'#1fae5c', h:0.20 });
 title.position.set(0, 1.68, TABLE.z - 0.35); title.scale.multiplyScalar(1.6); scene.add(title);
 const hint = flatText('park a card · hit ROLL', { size:44, color:'#b9cfc2', backing:'rgba(2,8,5,0.55)', h:0.14 });
-const dbgPhase = flatText('phase: boot', { size:36, color:'#ff9', backing:'rgba(20,0,0,0.6)', h:0.08 });
-dbgPhase.position.set(0.55, SURFACE_Y + 0.02, 0.15);
-dbgPhase.rotation.x = -Math.PI/2;
-scene.add(dbgPhase);
-function updateDbgPhase() { setFlatLabel(dbgPhase, 'phase: ' + game.phase, '#ff9'); }
-window.addEventListener('error', (e) => {
-  try { setFlatLabel(dbgPhase, 'ERR: ' + String(e.message).slice(0, 40), '#f66'); } catch(_) {}
-});
+
 hint.position.set(0, 1.22, TABLE.z); scene.add(hint);
 
 /* ---- flat HEALTH label on the felt ---- */
@@ -577,16 +570,6 @@ function rollDie(cb, side='player') {
   puff(die.home, 0xd4af37, 10, 0.5);
 }
 function pressRollButton() {
-  // during selection, ROLL locks the wheel — no reaching for the portrait
-  if (randomizer.active) {
-    const key = randomizer.fighters[randomizer.idx];
-    randomizer.active = false; // lock it — no double-taps
-    rollBtn.base.scale.y = 0.35;
-    setTimeout(() => { rollBtn.base.scale.y = 1; }, 180);
-    if (randomizer.kind === 'player') selectPlayerFighter(key);
-    else selectFighter(key);
-    return;
-  }
   if (die.mode !== 'idle') return;
   rollBtn.base.scale.y = 0.35;
   setTimeout(() => { rollBtn.base.scale.y = 1; }, 180);
@@ -867,7 +850,7 @@ function registerTouchables() {
   // ROLL — dip your finger onto it (also locks the select wheel)
   addTouchable(() => V(ROLL_POS.x, ROLL_POS.y + 0.026, ROLL_POS.z), 0.085, 0.03,
     () => pressRollButton(),
-    () => (randomizer.active || ((game.phase === 'draw' || game.phase === 'play') && die.mode === 'idle')) && !game.shopOpen,
+    () => (game.phase === 'draw' || game.phase === 'play') && die.mode === 'idle' && !game.shopOpen,
     1.5);
   // table height nudge
   addTouchable(() => V(heightMinus.pos.x, heightMinus.pos.y + 0.025, heightMinus.pos.z), 0.06, 0.035,
@@ -2143,7 +2126,6 @@ function checkWin() {
 /* ================= turn flow ================= */
 function setPhase(p, line) {
   game.phase = p;
-  try { updateDbgPhase(); } catch(e) {}
   if (line) griot.say(line);
   setStepLabel();
 }
