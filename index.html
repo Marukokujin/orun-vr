@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v34 · NULL FOE FIX</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v35 · ERROR CATCHER</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -237,6 +237,9 @@ dbgPhase.position.set(0.55, SURFACE_Y + 0.02, 0.15);
 dbgPhase.rotation.x = -Math.PI/2;
 scene.add(dbgPhase);
 function updateDbgPhase() { setFlatLabel(dbgPhase, 'phase: ' + game.phase, '#ff9'); }
+window.addEventListener('error', (e) => {
+  try { setFlatLabel(dbgPhase, 'ERR: ' + String(e.message).slice(0, 40), '#f66'); } catch(_) {}
+});
 hint.position.set(0, 1.22, TABLE.z); scene.add(hint);
 
 /* ---- flat HEALTH label on the felt ---- */
