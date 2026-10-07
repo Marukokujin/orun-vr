@@ -30,13 +30,14 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v6</h1>
+  <h1>ORUN — TABLE AR v7</h1>
   <p>Green table in your room. Yellow TABLE button reveals UP/DOWN/FWD/BACK.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
 </div>
 <script type="module">
 import * as THREE from 'three';
+import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
 const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
@@ -102,9 +103,13 @@ const touchables = [];
 function addTouchable(getPos, r, onTouch) {
   touchables.push({ getPos, r, onTouch, inside:new Set() });
 }
-// Three.js hand objects — the right way
+// Three.js hand objects — the right way, with visible meshes
+const handFactory = new XRHandModelFactory();
 const xrHands = [renderer.xr.getHand(0), renderer.xr.getHand(1)];
-for (const h of xrHands) scene.add(h);
+for (const h of xrHands) {
+  h.add(handFactory.createHandModel(h, 'mesh'));
+  scene.add(h);
+}
 const _jv = new THREE.Vector3();
 function getFingertip(i, out) {
   const hand = xrHands[i];
