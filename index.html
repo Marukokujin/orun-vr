@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v33 · SPLASH BACK + NO NULL CARDS</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v34 · NULL FOE FIX</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -1047,6 +1047,7 @@ const foeName = () => FIGHTER_DATA[currentFighter].name;
 let currentFighter = 'OUTLAW';
 const fighterTexCache = {};
 function fighterTexs(key) {
+  if (!key || !FIGHTER_DATA[key]) return [null,null,null,null,null,null];
   if (!fighterTexCache[key]) {
     const loader = new THREE.TextureLoader();
     fighterTexCache[key] = FIGHTER_DATA[key].portraits.map(uri => {
@@ -2259,12 +2260,14 @@ function updateHealthBars() {
   setPlayerBarPortrait(game.playerHP);
   setBarName(playerBar, PLAYER_DATA[playerFighter].name);
   const foeKey = currentFighter;
-  if (hudFoeKey !== foeKey) {
+  if (foeKey && hudFoeKey !== foeKey) {
     hudFoeKey = foeKey;
     setBarName(foeBar, FIGHTER_DATA[foeKey].name);
   }
-  foeBar.portrait.material.map = fighterTexs(foeKey)[5 - Math.max(0, Math.min(5, game.outlawHP))];
-  foeBar.portrait.material.needsUpdate = true;
+  if (foeKey) {
+    foeBar.portrait.material.map = fighterTexs(foeKey)[5 - Math.max(0, Math.min(5, game.outlawHP))];
+    foeBar.portrait.material.needsUpdate = true;
+  }
   const pp = Math.max(0, game.playerHP / 5), fp = Math.max(0, game.outlawHP / 5);
   for (const [bar, p] of [[playerBar, pp], [foeBar, fp]]) {
     bar.fill.scale.x = Math.max(0.001, p);
