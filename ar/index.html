@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v11</h1>
+  <h1>ORUN — TABLE AR v12</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -89,44 +89,7 @@ trim.rotation.x = Math.PI/2;
 trim.position.y = TABLE.topY + 0.001;
 tableGroup.add(trim);
 
-// opponent across the table
-const oppGroup = new THREE.Group();
-oppGroup.position.set(0, 0, -0.42);
-tableGroup.add(oppGroup);
-const oppStand = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.06, 0.07, 0.02, 24),
-  new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.5, metalness:0.4 })
-);
-oppStand.position.y = 0.01;
-oppGroup.add(oppStand);
-// opponent placeholder (image disabled for testing)
-const oppMesh = new THREE.Mesh(
-  new THREE.CircleGeometry(0.055, 32),
-  new THREE.MeshBasicMaterial({ color:0x883333, side:THREE.DoubleSide })
-);
-oppMesh.position.y = 0.09;
-const oppRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.055, 0.062, 32),
-  new THREE.MeshBasicMaterial({ color:0xd4af37, side:THREE.DoubleSide })
-);
-oppRing.position.set(0, 0.09, 0.001);
-oppGroup.add(oppMesh, oppRing);
 
-// deck of cards
-const deckGroup = new THREE.Group();
-deckGroup.position.set(-0.28, 0, 0.1);
-tableGroup.add(deckGroup);
-const deckMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(0.09, 0.025, 0.13),
-  new THREE.MeshStandardMaterial({ color:0x0d3b2e, roughness:0.6 })
-);
-deckMesh.position.y = 0.013;
-deckGroup.add(deckMesh);
-addTouchable(() => { const v = new THREE.Vector3(); deckGroup.getWorldPosition(v); v.y += 0.02; return v; },
-  0.08, () => {
-    deckMesh.material.color.setHex(0x39d97e);
-    setTimeout(() => deckMesh.material.color.setHex(0x0d3b2e), 200);
-  });
 
 // blinking alive light
 const blink = new THREE.Mesh(
