@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v36 · TAP TO LOCK</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v37 · BREADCRUMBS</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -1163,11 +1163,12 @@ function selectPlayerFighter(key) {
   playerBarState = -1; hudFoeKey = null;
   randomizer.active = false;
   randGroup.visible = false;
-  griot.say(`${PLAYER_DATA[key].name} steps to the table!`);
+  griot.say(`[1/6] ${PLAYER_DATA[key].name} steps to the table!`);
   updateHealthBars();
   setTimeout(() => { if (!game.result) showFoeSelect(); }, 900);
 }
 function showFoeSelect() {
+  griot.say('[2/6] Foe wheel up!');
   setPhase('select', 'The wheel spins... touch to lock your foe!');
   showRandomizer(game.campaign.order, 'foe');
 }
@@ -1218,7 +1219,7 @@ function showVersus(foeKey, done) {
   setVersusName('p', PLAYER_DATA[playerFighter || 'ADE'].name);
   setVersusName('f', FIGHTER_DATA[foeKey].name);
   versusGroup.visible = true;
-  griot.say(`${PLAYER_DATA[playerFighter || 'ADE'].name} versus ${FIGHTER_DATA[foeKey].name}!`);
+  griot.say(`[4/6] ${PLAYER_DATA[playerFighter || 'ADE'].name} versus ${FIGHTER_DATA[foeKey].name}!`);
   setTimeout(() => { versusGroup.visible = false; if (done) done(); }, 2600);
 }
 function selectFighter(key) {
@@ -1231,13 +1232,16 @@ function selectFighter(key) {
   randomizer.active = false;
   randGroup.visible = false;
   // the versus splash, then the duel
+  griot.say('[3/6] Foe locked!');
   setPhase('intro', 'The Griot: ' + FIGHTER_DATA[key].name + ' approaches...');
   showVersus(key, () => {
     if (game.result) return;
+    griot.say('[5/6] Versus done, resetting!');
     resetDuel();
     if (game.campaign && game.campaign.upgrades.plating) addArmor('player');
     spawnSpecialToken();
     setPhase('intro', 'The Griot: ' + FIGHTER_DATA[key].name + ' approaches...');
+    griot.say('[6/6] Starting your turn!');
     setTimeout(() => { if (!game.result) startPlayerTurn(true); }, 1400);
   });
 }
