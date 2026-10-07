@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v12</h1>
+  <h1>ORUN — TABLE AR v13</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -175,12 +175,12 @@ function makeButton(label, color) {
 
 // Settings button lives ON the table — moves with it
 const settingsBtn = makeButton('SETTINGS', 0xd4af37);
-settingsBtn.position.set(0, 0.035, 0.42);
+settingsBtn.position.set(0.35, 0.74, 0.25);
 tableGroup.add(settingsBtn);
 
 // Settings panel — floats above the table, also rides with it
 const adjGroup = new THREE.Group();
-adjGroup.position.set(0, 0.18, 0);
+adjGroup.position.set(0, 0.92, 0);
 adjGroup.visible = false;
 tableGroup.add(adjGroup);
 
