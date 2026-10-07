@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Orun — Table AR</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:transparent; overflow:hidden;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  #overlay { position:fixed; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:10px; text-align:center; color:#e8f5ee; padding:18px 24px 22px;
+    background: rgba(4,8,6,.86); z-index:10; }
+  #overlay h1 { margin:0; font-size: clamp(22px, 4vw, 32px); letter-spacing:2px; color:#39d97e; }
+  #overlay p { margin:0; max-width:560px; line-height:1.5; color:#b9cfc2; font-size:clamp(13px,2.2vw,15px); }
+  #enterAR { font-size:20px; font-weight:700; letter-spacing:1px; padding:16px 40px; border:2px solid #1fae5c;
+    border-radius:999px; background:transparent; color:#39d97e; cursor:pointer; }
+  #enterAR:active { transform:scale(.97); }
+  #status { font-size:13px; color:#8fa89a; min-height:20px; }
+  .hidden { display:none !important; }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="overlay">
+  <h1>ORUN — TABLE AR v1</h1>
+  <p>Green table in your room. No hands, no buttons — just look.</p>
+  <button id="enterAR">ENTER AR</button>
+  <div id="status"></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+
+const app = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+// NO background — transparent for AR passthrough
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.01, 50);
+camera.position.set(0, 1.4, 0.6);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+dir.position.set(1, 3, 1);
+scene.add(dir);
+
+const rig = new THREE.Group();
+scene.add(rig);
+rig.add(camera);
+
+// ============ the table only ============
+const TABLE = { r: 0.5, topY: 0.72, z: -0.55 };
+const tableGroup = new THREE.Group();
+tableGroup.position.z = TABLE.z;
+scene.add(tableGroup);
+
+const felt = new THREE.Mesh(
+  new THREE.CylinderGeometry(TABLE.r, TABLE.r, 0.05, 48),
+  new THREE.MeshStandardMaterial({ color:0x0d3b2e, roughness:0.95 })
+);
+felt.position.y = TABLE.topY - 0.025;
+tableGroup.add(felt);
+
+const rim = new THREE.Mesh(
+  new THREE.TorusGeometry(TABLE.r, 0.022, 12, 64),
+  new THREE.MeshStandardMaterial({ color:0x1a1a1a, roughness:0.5, metalness:0.4 })
+);
+rim.rotation.x = Math.PI/2;
+rim.position.y = TABLE.topY;
+tableGroup.add(rim);
+
+const trim = new THREE.Mesh(
+  new THREE.TorusGeometry(TABLE.r - 0.03, 0.008, 8, 64),
+  new THREE.MeshStandardMaterial({ color:0xd4af37, metalness:0.8, roughness:0.3 })
+);
+trim.rotation.x = Math.PI/2;
+trim.position.y = TABLE.topY + 0.001;
+tableGroup.add(trim);
+
+// simple frame counter (no text textures, just a blinking light)
+const blink = new THREE.Mesh(
+  new THREE.SphereGeometry(0.02, 12, 8),
+  new THREE.MeshBasicMaterial({ color:0x39d97e })
+);
+blink.position.set(0, TABLE.topY + 0.1, TABLE.z);
+scene.add(blink);
+let blinkT = 0;
+
+// ============ enter AR ============
+const enterBtn = document.getElementById('enterAR');
+const statusEl = document.getElementById('status');
+
+enterBtn.addEventListener('click', async () => {
+  if (!navigator.xr) { statusEl.textContent = 'WebXR not available'; return; }
+  const ok = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+  if (!ok) { statusEl.textContent = 'AR not supported on this device'; return; }
+  try {
+    const session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['local-floor'],
+      optionalFeatures: ['hand-tracking']
+    });
+    renderer.xr.setSession(session);
+    document.getElementById('overlay').classList.add('hidden');
+    session.addEventListener('end', () => {
+      document.getElementById('overlay').classList.remove('hidden');
+    });
+  } catch (e) {
+    statusEl.textContent = 'Could not start AR: ' + e.message;
+  }
+});
+
+// ============ animation loop — nothing but render ============
+renderer.setAnimationLoop(() => {
+  blinkT += 0.05;
+  blink.material.color.setHex(Math.sin(blinkT * 3) > 0 ? 0x39d97e : 0x0d3b2e);
+  renderer.render(scene, camera);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
