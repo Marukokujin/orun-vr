@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v4</h1>
+  <h1>ORUN — TABLE AR v5</h1>
   <p>Green table in your room. Yellow TABLE button reveals UP/DOWN/FWD/BACK.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -225,7 +225,12 @@ renderer.setAnimationLoop(() => {
   try { checkTouchables(); } catch(e) {}
   try { updateFingertips(); } catch(e) {}
   blinkT += 0.05;
-  blink.material.color.setHex(Math.sin(blinkT * 3) > 0 ? 0x39d97e : 0x0d3b2e);
+  const hands = getHandSources();
+  if (hands.length > 0) {
+    blink.material.color.setHex(0x00ff88); // solid green = hands detected
+  } else {
+    blink.material.color.setHex(Math.sin(blinkT * 3) > 0 ? 0xff3333 : 0x550000); // blinking red = no hands
+  }
   renderer.render(scene, camera);
 });
 
