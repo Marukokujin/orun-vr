@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v3</h1>
+  <h1>ORUN — TABLE AR v4</h1>
   <p>Green table in your room. Yellow TABLE button reveals UP/DOWN/FWD/BACK.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -102,30 +102,25 @@ const touchables = [];
 function addTouchable(getPos, r, onTouch) {
   touchables.push({ getPos, r, onTouch, inside:new Set() });
 }
-const handInputs = [];
-function setupHands(session) {
+function getHandSources() {
+  const session = renderer.xr.getSession();
+  if (!session) return [];
+  const hands = [];
   for (const source of session.inputSources) {
-    if (source.hand) handInputs.push({ source });
+    if (source.hand) hands.push(source);
   }
-  session.addEventListener('inputsourceschange', (e) => {
-    for (const s of e.added) if (s.hand) handInputs.push({ source:s });
-    for (const s of e.removed) {
-      const i = handInputs.findIndex(h => h.source === s);
-      if (i >= 0) handInputs.splice(i, 1);
-    }
-  });
+  return hands;
 }
 const _v = new THREE.Vector3();
 // visible fingertip dots — green when tracking, so you know hands are live
 const fingertipDots = [];
 function updateFingertips() {
-  // clear old
   for (const d of fingertipDots) scene.remove(d);
   fingertipDots.length = 0;
-  for (const h of handInputs) {
-    if (!h.source.hand) continue;
+  const hands = getHandSources();
+  for (const source of hands) {
     let tip;
-    try { tip = h.source.hand.get('index-finger-tip'); } catch(e) { continue; }
+    try { tip = source.hand.get('index-finger-tip'); } catch(e) { continue; }
     if (!tip) continue;
     const dot = new THREE.Mesh(
       new THREE.SphereGeometry(0.015, 10, 8),
@@ -137,20 +132,20 @@ function updateFingertips() {
   }
 }
 function checkTouchables() {
+  const hands = getHandSources();
   for (const t of touchables) {
     let pos;
     try { pos = t.getPos(); } catch(e) { continue; }
-    for (const h of handInputs) {
-      if (!h.source.hand) continue;
+    for (const source of hands) {
       let tip;
-      try { tip = h.source.hand.get('index-finger-tip'); } catch(e) { continue; }
+      try { tip = source.hand.get('index-finger-tip'); } catch(e) { continue; }
       if (!tip) continue;
       try { tip.getWorldPosition(_v); } catch(e) { continue; }
       const d = _v.distanceTo(pos);
       const isInside = d < t.r;
-      const wasInside = t.inside.has(h);
-      if (isInside && !wasInside) { t.inside.add(h); try { t.onTouch(); } catch(e) {} }
-      else if (!isInside && wasInside) t.inside.delete(h);
+      const wasInside = t.inside.has(source);
+      if (isInside && !wasInside) { t.inside.add(source); try { t.onTouch(); } catch(e) {} }
+      else if (!isInside && wasInside) t.inside.delete(source);
     }
   }
 }
@@ -216,7 +211,6 @@ enterBtn.addEventListener('click', async () => {
       requiredFeatures: ['local-floor', 'hand-tracking']
     });
     renderer.xr.setSession(session);
-    setupHands(session);
     document.getElementById('overlay').classList.add('hidden');
     session.addEventListener('end', () => {
       document.getElementById('overlay').classList.remove('hidden');
