@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v39 · MINIMAL SELECT</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v40 · TAP A SPECTATOR</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -584,6 +584,51 @@ function pressRollButton() {
   setTimeout(() => { rollBtn.base.scale.y = 1; }, 180);
   griot.say('Roll!');
   rollDie(resolvePlayerRoll, 'player');
+}
+
+/* ================= foe select row — tap a spectator to fight them ================= */
+const foeSelectGroup = new THREE.Group();
+foeSelectGroup.position.set(0, 1.02, -0.72);
+foeSelectGroup.visible = false;
+scene.add(foeSelectGroup);
+const foeSelectBtns = [];
+function buildFoeSelectRow() {
+  // clear old
+  for (const b of foeSelectBtns) foeSelectGroup.remove(b.group);
+  foeSelectBtns.length = 0;
+  const keys = Object.keys(FIGHTER_DATA);
+  const n = keys.length;
+  const spacing = 0.11;
+  const startX = -((n - 1) * spacing) / 2;
+  keys.forEach((key, i) => {
+    const g = new THREE.Group();
+    g.position.set(startX + i * spacing, 0, 0);
+    // portrait
+    const tex = fighterTexs(key)[0];
+    const pm = new THREE.Mesh(new THREE.CircleGeometry(0.045, 32),
+      new THREE.MeshBasicMaterial({ map:tex, transparent:true, side:THREE.DoubleSide }));
+    // gold ring
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.045, 0.052, 32),
+      new THREE.MeshBasicMaterial({ color:0xd4af37, transparent:true, opacity:0.9, side:THREE.DoubleSide }));
+    ring.position.z = 0.001;
+    g.add(pm, ring);
+    foeSelectGroup.add(g);
+    foeSelectBtns.push({ key, group:g });
+    // touchable
+    addTouchable(() => { const v = new THREE.Vector3(); g.getWorldPosition(v); return v; },
+      0.06, 0.06,
+      () => { if (foeSelectGroup.visible) selectFighter(key); },
+      () => foeSelectGroup.visible, 1.0);
+  });
+}
+function showFoeSelectRow() {
+  buildFoeSelectRow();
+  foeSelectGroup.visible = true;
+  setPhase('select', 'Tap a fighter to challenge them!');
+  griot.say('Choose your opponent!');
+}
+function hideFoeSelectRow() {
+  foeSelectGroup.visible = false;
 }
 
 /* ================= fighter specials (once per duel) ================= */
@@ -1150,13 +1195,17 @@ function setFighterName(name) {
 function showPlayerSelect() {
   fullReset();
   startCampaign();
-  playerFighter = null;
+  // YOU are the fighter — no selection. Default to ADE's kit.
+  playerFighter = 'ADE';
   currentFighter = null;
-  hudGroup.visible = false;
+  playerBarState = -1;
+  setPlayerBarPortrait(5);
+  setBarName(playerBar, 'YOU');
+  hudGroup.visible = true;
   updateRoadmap();
-  setPhase('select', 'Choose your fighter — touch to lock!');
-  showRandomizer(PLAYER_FIGHTERS, 'player');
-  griot.say('Choose your fighter!');
+  updateHealthBars();
+  // straight to foe select — tap a spectator
+  showFoeSelectRow();
 }
 function selectPlayerFighter(key) {
   if (!PLAYER_DATA[key]) return;
@@ -1233,15 +1282,24 @@ function showVersus(foeKey, done) {
 }
 function selectFighter(key) {
   if (!FIGHTER_DATA[key]) return;
+  hideFoeSelectRow();
   randomizer.active = false;
   randGroup.visible = false;
   currentFighter = key;
+  outlawState = -1;
+  hudFoeKey = null;
+  // step-by-step setup with guards — if one fails, we see which
+  try { setFighterName(FIGHTER_DATA[key].name); } catch(e) { griot.say('name failed'); }
+  try { setFighterPortrait(5); } catch(e) { griot.say('portrait failed'); }
+  try { updateRoadmap(); } catch(e) { griot.say('roadmap failed'); }
+  try { updateHealthBars(); } catch(e) { griot.say('healthbars failed'); }
   griot.say('Foe locked: ' + FIGHTER_DATA[key].name);
-  // MINIMAL: skip versus splash, skip portraits — straight to duel setup
   setTimeout(() => {
     if (game.result) return;
     try {
       resetDuel();
+      if (game.campaign && game.campaign.upgrades.plating) addArmor('player');
+      spawnSpecialToken();
       setPhase('intro', 'Duel begins!');
       setTimeout(() => { if (!game.result) startPlayerTurn(true); }, 1000);
     } catch (err) {
