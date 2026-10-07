@@ -37,7 +37,7 @@
 <div id="app"></div>
 <div id="overlay">
   <h1>ORUN</h1>
-  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v32 · PHASE DEBUG</div>
+  <div style="display:inline-block; background:#d4af37; color:#0d1a14; font-weight:800; font-size:22px; letter-spacing:2px; padding:6px 22px; border-radius:8px; margin-bottom:14px;">v33 · SPLASH BACK + NO NULL CARDS</div>
   <p><b>The duel.</b> Pick your fighter, then spin the wheel to meet your foe. <b>Two cards are dealt — play one face-down, roll the D12</b> — land in your card's range and it fires. Empty roll? The die's twelve fates decide: wounds, armor, gold, health, and stranger things. Best all eight fighters to claim the table.</p>
   <p style="font-size:13px; opacity:.85;"><b>Hands:</b> pinch to grab cards, coins &amp; the die · <b>touch</b> buttons, the deck &amp; portraits · <b>−/+</b> set table height.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
@@ -1189,7 +1189,7 @@ function showSelect() {
 }
 /* VERSUS splash — your fighter faces their fighter, then the duel begins */
 const versusGroup = new THREE.Group();
-versusGroup.position.set(0, 0.95, -0.35);
+versusGroup.position.set(0, 0.95, -0.65);
 versusGroup.visible = false;
 scene.add(versusGroup);
 {
@@ -1781,9 +1781,8 @@ function drawCard(silent=false) {
   try {
     spawnCard(keyName, slot, true);
   } catch (err) {
-    // never let a card spawn break the turn — log and move on
+    // never let a card spawn break the turn — leave the slot empty
     if (typeof console !== 'undefined') console.error('drawCard spawn failed:', err);
-    game.hand[slot] = { key:keyName, def:CARD_DEFS[keyName], mesh:null, slot, state:'hand', faceTex:null };
   }
 }
 function healPlayer(n) {
@@ -2275,7 +2274,7 @@ function updateHealthBars() {
 }
 /* result splash — who won, the pose, rematch or new challenger, on a timer */
 const resultGroup = new THREE.Group();
-resultGroup.position.set(0, 0.95, -0.35);
+resultGroup.position.set(0, 0.95, -0.65);
 resultGroup.visible = false;
 scene.add(resultGroup);
 // (title mesh built fresh in showResult)
