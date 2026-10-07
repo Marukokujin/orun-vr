@@ -30,8 +30,8 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v7</h1>
-  <p>Green table in your room. Yellow TABLE button reveals UP/DOWN/FWD/BACK.</p>
+  <h1>ORUN — TABLE AR v8</h1>
+  <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
 </div>
@@ -171,28 +171,72 @@ function makeButton(label, color) {
   return g;
 }
 
-const tableBtn = makeButton('TABLE', 0xd4af37);
-tableBtn.position.set(0.35, TABLE.topY + 0.02, TABLE.z + 0.25);
-scene.add(tableBtn);
+// Settings button lives ON the table — moves with it
+const settingsBtn = makeButton('SETTINGS', 0xd4af37);
+settingsBtn.position.set(0.35, 0.03, 0.25);
+tableGroup.add(settingsBtn);
 
+// Settings panel — floats above the table, also rides with it
 const adjGroup = new THREE.Group();
+adjGroup.position.set(0, 0.18, 0);
 adjGroup.visible = false;
-scene.add(adjGroup);
+tableGroup.add(adjGroup);
 
 const btnUp = makeButton('UP', 0x1fae5c);
-btnUp.position.set(-0.15, TABLE.topY + 0.02, TABLE.z + 0.25);
+btnUp.position.set(-0.18, 0, 0.1);
 const btnDown = makeButton('DOWN', 0x1fae5c);
-btnDown.position.set(-0.05, TABLE.topY + 0.02, TABLE.z + 0.25);
+btnDown.position.set(-0.06, 0, 0.1);
 const btnFwd = makeButton('FWD', 0x1fae5c);
-btnFwd.position.set(0.05, TABLE.topY + 0.02, TABLE.z + 0.25);
+btnFwd.position.set(0.06, 0, 0.1);
 const btnBack = makeButton('BACK', 0x1fae5c);
-btnBack.position.set(0.15, TABLE.topY + 0.02, TABLE.z + 0.25);
+btnBack.position.set(0.18, 0, 0.1);
 adjGroup.add(btnUp, btnDown, btnFwd, btnBack);
+
+// Color swatches for the table felt
+const TABLE_COLORS = [0x0d3b2e, 0x1a3a5c, 0x5c1a1a, 0x3a1a5c, 0xd4af37, 0x111111];
+const tableSwatches = [];
+TABLE_COLORS.forEach((col, i) => {
+  const s = new THREE.Mesh(
+    new THREE.CircleGeometry(0.025, 24),
+    new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide })
+  );
+  s.rotation.x = -Math.PI/2;
+  s.position.set(-0.15 + i * 0.06, 0.001, -0.05);
+  adjGroup.add(s);
+  tableSwatches.push({ mesh:s, color:col });
+  addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
+    0.04, () => { felt.material.color.setHex(col); });
+});
+
+// Color swatches for hands
+const HAND_COLORS = [0xffffff, 0x39d97e, 0x4488ff, 0xd4af37, 0xff5040];
+const handSwatches = [];
+HAND_COLORS.forEach((col, i) => {
+  const s = new THREE.Mesh(
+    new THREE.CircleGeometry(0.025, 24),
+    new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide })
+  );
+  s.rotation.x = -Math.PI/2;
+  s.position.set(-0.12 + i * 0.06, 0.001, -0.12);
+  adjGroup.add(s);
+  handSwatches.push({ mesh:s, color:col });
+  addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
+    0.04, () => {
+      for (const h of xrHands) {
+        h.traverse((o) => {
+          if (o.isMesh && o.material) {
+            o.material.color.setHex(col);
+          }
+        });
+      }
+    });
+});
 
 let tableY = TABLE.topY, tableZ = TABLE.z;
 const wp = (obj) => { const v = new THREE.Vector3(); obj.getWorldPosition(v); return v; };
 
-addTouchable(() => wp(tableBtn), 0.08, () => { adjGroup.visible = !adjGroup.visible; });
+addTouchable(() => { const v = new THREE.Vector3(); settingsBtn.getWorldPosition(v); return v; },
+  0.08, () => { adjGroup.visible = !adjGroup.visible; });
 addTouchable(() => wp(btnUp), 0.07, () => { tableY = Math.min(1.1, tableY + 0.03); tableGroup.position.y = tableY - TABLE.topY; });
 addTouchable(() => wp(btnDown), 0.07, () => { tableY = Math.max(0.4, tableY - 0.03); tableGroup.position.y = tableY - TABLE.topY; });
 addTouchable(() => wp(btnFwd), 0.07, () => { tableZ = Math.max(-1.0, tableZ - 0.03); tableGroup.position.z = tableZ; });
