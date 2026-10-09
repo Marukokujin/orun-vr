@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v22</h1>
+  <h1>ORUN — TABLE AR v23</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -308,8 +308,6 @@ addTouchable(() => { const v = new THREE.Vector3(); solidBtn.getWorldPosition(v)
     felt.material.metalness = 0.0;
     felt.material.needsUpdate = true;
   });
-
-});
 
 let tableY = TABLE.topY, tableZ = TABLE.z, tableX = 0;
 const wp = (obj) => { const v = new THREE.Vector3(); obj.getWorldPosition(v); return v; };
