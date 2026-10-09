@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v25</h1>
+  <h1>ORUN — TABLE AR v26</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -102,8 +102,8 @@ let blinkT = 0;
 
 // ============ hand tracking + touch ============
 const touchables = [];
-function addTouchable(getPos, r, onTouch) {
-  touchables.push({ getPos, r, onTouch, inside:new Set() });
+function addTouchable(getPos, r, onTouch, visibleFn) {
+  touchables.push({ getPos, r, onTouch, inside:new Set(), visibleFn });
 }
 // ============ opponent (floating, head-sized, random for testing) ============
 // Headshots load from /ar/heads/ as separate PNGs (not embedded — keeps HTML small)
@@ -117,7 +117,7 @@ const OPP_HEADS = {
 };
 const OPP_ORDER = Object.keys(OPP_HEADS);
 const oppGroup = new THREE.Group();
-oppGroup.position.set(0, 1.15, -0.95);
+oppGroup.position.set(0, 1.15, -0.70);
 tableGroup.add(oppGroup);
 const oppCanvas = document.createElement('canvas');
 oppCanvas.width = oppCanvas.height = 256;
@@ -146,7 +146,7 @@ function setOpponent(name) {
   oppGroup.userData.name = name;
 }
 setOpponent(OPP_ORDER[Math.floor(Math.random() * OPP_ORDER.length)]);
-const _oppBaseY = 1.15;
+const _oppBaseY = 1.15; // z=-0.70 (closer to table)
 
 // Three.js hand objects — the right way, with visible meshes
 const handFactory = new XRHandModelFactory();
@@ -184,6 +184,7 @@ function updateFingertips() {
 }
 function checkTouchables() {
   for (const t of touchables) {
+    if (t.visibleFn) { try { if (!t.visibleFn()) continue; } catch(e) {} }
     let pos;
     try { pos = t.getPos(); } catch(e) { continue; }
     for (let i = 0; i < 2; i++) {
@@ -271,7 +272,7 @@ TABLE_COLORS.forEach((col, i) => {
   adjGroup.add(s);
   tableSwatches.push({ mesh:s, color:col });
   addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
-    0.04, () => { felt.material.color.setHex(col); });
+    0.04, () => { felt.material.color.setHex(col); }, () => adjGroup.visible);
 });
 
 const handsLabel = makeLabel('HANDS');
@@ -310,7 +311,7 @@ HAND_COLORS.forEach((col, i) => {
   s.position.set(-0.15 + i * 0.06, 0.001, -0.10);
   adjGroup.add(s);
   addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
-    0.04, () => { handColor = col; applyHandStyle(); });
+    0.04, () => { handColor = col; applyHandStyle(); }, () => adjGroup.visible);
 });
 // style buttons: SOLID | GHOST | CLEAR
 const handStyles = [['SOLID','solid',0x1fae5c], ['GHOST','ghost',0x4488ff], ['CLEAR','clear',0x666666]];
@@ -320,7 +321,7 @@ handStyles.forEach(([label, style, btnCol], i) => {
   b.scale.set(0.8, 0.8, 0.8);
   adjGroup.add(b);
   addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
-    0.06, () => { handStyle = style; applyHandStyle(); });
+    0.06, () => { handStyle = style; applyHandStyle(); }, () => adjGroup.visible);
 });
 // Glass toggle (the keeper)
 const glassLabel = makeLabel('FINISH');
@@ -343,7 +344,7 @@ addTouchable(() => { const v = new THREE.Vector3(); glassBtn.getWorldPosition(v)
     felt.material.roughness = 0.05;
     felt.material.metalness = 0.0;
     felt.material.needsUpdate = true;
-  });
+  }, () => adjGroup.visible);
 addTouchable(() => { const v = new THREE.Vector3(); solidBtn.getWorldPosition(v); return v; },
   0.05, () => {
     isGlass = false;
@@ -352,27 +353,27 @@ addTouchable(() => { const v = new THREE.Vector3(); solidBtn.getWorldPosition(v)
     felt.material.roughness = 1.0;
     felt.material.metalness = 0.0;
     felt.material.needsUpdate = true;
-  });
+  }, () => adjGroup.visible);
 const dotsBtn = makeButton('DOTS', 0x00ff88);
 dotsBtn.scale.set(0.7, 0.7, 0.7);
 dotsBtn.position.set(0, 0, -0.36);
 adjGroup.add(dotsBtn);
 addTouchable(() => { const v = new THREE.Vector3(); dotsBtn.getWorldPosition(v); return v; },
-  0.05, () => { showDots = !showDots; });
+  0.05, () => { showDots = !showDots; }, () => adjGroup.visible);
 
 let tableY = TABLE.topY, tableZ = TABLE.z, tableX = 0;
 const wp = (obj) => { const v = new THREE.Vector3(); obj.getWorldPosition(v); return v; };
 
 addTouchable(() => { const v = new THREE.Vector3(); settingsBtn.getWorldPosition(v); return v; },
   0.08, () => { adjGroup.visible = !adjGroup.visible; });
-addTouchable(() => wp(btnUp), 0.07, () => { tableY = Math.min(1.1, tableY + 0.03); tableGroup.position.y = tableY - TABLE.topY; });
-addTouchable(() => wp(btnDown), 0.07, () => { tableY = Math.max(0.4, tableY - 0.03); tableGroup.position.y = tableY - TABLE.topY; });
-addTouchable(() => wp(btnFwd), 0.07, () => { tableZ = Math.max(-1.0, tableZ - 0.03); tableGroup.position.z = tableZ; });
-addTouchable(() => wp(btnBack), 0.07, () => { tableZ = Math.min(-0.2, tableZ + 0.03); tableGroup.position.z = tableZ; });
+addTouchable(() => wp(btnUp), 0.07, () => { tableY = Math.min(1.1, tableY + 0.03); tableGroup.position.y = tableY - TABLE.topY; }, () => adjGroup.visible);
+addTouchable(() => wp(btnDown), 0.07, () => { tableY = Math.max(0.4, tableY - 0.03); tableGroup.position.y = tableY - TABLE.topY; }, () => adjGroup.visible);
+addTouchable(() => wp(btnFwd), 0.07, () => { tableZ = Math.max(-1.0, tableZ - 0.03); tableGroup.position.z = tableZ; }, () => adjGroup.visible);
+addTouchable(() => wp(btnBack), 0.07, () => { tableZ = Math.min(-0.2, tableZ + 0.03); tableGroup.position.z = tableZ; }, () => adjGroup.visible);
 addTouchable(() => { const v = new THREE.Vector3(); btnLeft.getWorldPosition(v); return v; },
-  0.07, () => { tableX = Math.max(-0.5, tableX - 0.03); tableGroup.position.x = tableX; });
+  0.07, () => { tableX = Math.max(-0.5, tableX - 0.03); tableGroup.position.x = tableX; }, () => adjGroup.visible);
 addTouchable(() => { const v = new THREE.Vector3(); btnRight.getWorldPosition(v); return v; },
-  0.07, () => { tableX = Math.min(0.5, tableX + 0.03); tableGroup.position.x = tableX; });
+  0.07, () => { tableX = Math.min(0.5, tableX + 0.03); tableGroup.position.x = tableX; }, () => adjGroup.visible);
 
 // ============ enter AR ============
 const enterBtn = document.getElementById('enterAR');
