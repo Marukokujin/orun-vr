@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v14</h1>
+  <h1>ORUN — TABLE AR v15</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -185,15 +185,34 @@ adjGroup.visible = false;
 tableGroup.add(adjGroup);
 
 const btnUp = makeButton('UP', 0x1fae5c);
-btnUp.position.set(-0.18, 0, 0.1);
+btnUp.position.set(-0.25, 0, 0.12);
 const btnDown = makeButton('DOWN', 0x1fae5c);
-btnDown.position.set(-0.06, 0, 0.1);
+btnDown.position.set(-0.15, 0, 0.12);
+const btnLeft = makeButton('LEFT', 0x1fae5c);
+btnLeft.position.set(-0.05, 0, 0.12);
+const btnRight = makeButton('RIGHT', 0x1fae5c);
+btnRight.position.set(0.05, 0, 0.12);
 const btnFwd = makeButton('FWD', 0x1fae5c);
-btnFwd.position.set(0.06, 0, 0.1);
+btnFwd.position.set(0.15, 0, 0.12);
 const btnBack = makeButton('BACK', 0x1fae5c);
-btnBack.position.set(0.18, 0, 0.1);
-adjGroup.add(btnUp, btnDown, btnFwd, btnBack);
+btnBack.position.set(0.25, 0, 0.12);
+adjGroup.add(btnUp, btnDown, btnLeft, btnRight, btnFwd, btnBack);
 
+function makeLabel(text) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 48;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.font = 'bold 28px sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 128, 24);
+  const tex = new THREE.CanvasTexture(c);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.022),
+    new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+  m.rotation.x = -Math.PI/2;
+  return m;
+}
+const tableLabel = makeLabel('TABLE');
+tableLabel.position.set(0, 0.001, 0.02);
+adjGroup.add(tableLabel);
 // Color swatches for the table felt
 const TABLE_COLORS = [0x0d3b2e, 0x1a3a5c, 0x5c1a1a, 0x3a1a5c, 0xd4af37, 0x111111];
 const tableSwatches = [];
@@ -203,13 +222,16 @@ TABLE_COLORS.forEach((col, i) => {
     new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide })
   );
   s.rotation.x = -Math.PI/2;
-  s.position.set(-0.15 + i * 0.06, 0.001, -0.05);
+  s.position.set(-0.15 + i * 0.06, 0.001, -0.02);
   adjGroup.add(s);
   tableSwatches.push({ mesh:s, color:col });
   addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
     0.04, () => { felt.material.color.setHex(col); });
 });
 
+const handsLabel = makeLabel('HANDS');
+handsLabel.position.set(0, 0.001, -0.06);
+adjGroup.add(handsLabel);
 // Hand color + style
 let handColor = 0xffffff;
 let handStyle = 'solid'; // solid | ghost | clear
@@ -240,7 +262,7 @@ HAND_COLORS.forEach((col, i) => {
     new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide })
   );
   s.rotation.x = -Math.PI/2;
-  s.position.set(-0.12 + i * 0.06, 0.001, -0.12);
+  s.position.set(-0.12 + i * 0.06, 0.001, -0.10);
   adjGroup.add(s);
   addTouchable(() => { const v = new THREE.Vector3(); s.getWorldPosition(v); return v; },
     0.04, () => { handColor = col; applyHandStyle(); });
@@ -249,14 +271,14 @@ HAND_COLORS.forEach((col, i) => {
 const handStyles = [['SOLID','solid',0x1fae5c], ['GHOST','ghost',0x4488ff], ['CLEAR','clear',0x666666]];
 handStyles.forEach(([label, style, btnCol], i) => {
   const b = makeButton(label, btnCol);
-  b.position.set(-0.12 + i * 0.12, 0, -0.19);
+  b.position.set(-0.12 + i * 0.12, 0, -0.17);
   b.scale.set(0.8, 0.8, 0.8);
   adjGroup.add(b);
   addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
     0.06, () => { handStyle = style; applyHandStyle(); });
 });
 
-let tableY = TABLE.topY, tableZ = TABLE.z;
+let tableY = TABLE.topY, tableZ = TABLE.z, tableX = 0;
 const wp = (obj) => { const v = new THREE.Vector3(); obj.getWorldPosition(v); return v; };
 
 addTouchable(() => { const v = new THREE.Vector3(); settingsBtn.getWorldPosition(v); return v; },
@@ -265,6 +287,10 @@ addTouchable(() => wp(btnUp), 0.07, () => { tableY = Math.min(1.1, tableY + 0.03
 addTouchable(() => wp(btnDown), 0.07, () => { tableY = Math.max(0.4, tableY - 0.03); tableGroup.position.y = tableY - TABLE.topY; });
 addTouchable(() => wp(btnFwd), 0.07, () => { tableZ = Math.max(-1.0, tableZ - 0.03); tableGroup.position.z = tableZ; });
 addTouchable(() => wp(btnBack), 0.07, () => { tableZ = Math.min(-0.2, tableZ + 0.03); tableGroup.position.z = tableZ; });
+addTouchable(() => { const v = new THREE.Vector3(); btnLeft.getWorldPosition(v); return v; },
+  0.07, () => { tableX = Math.max(-0.5, tableX - 0.03); tableGroup.position.x = tableX; });
+addTouchable(() => { const v = new THREE.Vector3(); btnRight.getWorldPosition(v); return v; },
+  0.07, () => { tableX = Math.min(0.5, tableX + 0.03); tableGroup.position.x = tableX; });
 
 // ============ enter AR ============
 const enterBtn = document.getElementById('enterAR');
