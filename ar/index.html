@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v23</h1>
+  <h1>ORUN — TABLE AR v24</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -105,6 +105,49 @@ const touchables = [];
 function addTouchable(getPos, r, onTouch) {
   touchables.push({ getPos, r, onTouch, inside:new Set() });
 }
+// ============ opponent (floating, head-sized, random for testing) ============
+// Headshots load from /ar/heads/ as separate PNGs (not embedded — keeps HTML small)
+const OPP_HEADS = {
+  'OUTLAW': 'heads/OUTLAW.png',
+  'PILOT': 'heads/PILOT.png',
+  'PHARAOH': 'heads/PHARAOH.png',
+  'VIKING': 'heads/VIKING.png',
+  'CONSTABLE': 'heads/CONSTABLE.png',
+  'ZULU': 'heads/ZULU.png'
+};
+const OPP_ORDER = Object.keys(OPP_HEADS);
+const oppGroup = new THREE.Group();
+oppGroup.position.set(0, 1.15, -0.95);
+tableGroup.add(oppGroup);
+const oppCanvas = document.createElement('canvas');
+oppCanvas.width = oppCanvas.height = 256;
+const oppCtx = oppCanvas.getContext('2d');
+const oppTex = new THREE.CanvasTexture(oppCanvas);
+oppTex.colorSpace = THREE.SRGBColorSpace;
+const oppMesh = new THREE.Mesh(
+  new THREE.CircleGeometry(0.10, 48),
+  new THREE.MeshBasicMaterial({ map:oppTex, transparent:true, side:THREE.DoubleSide })
+);
+oppGroup.add(oppMesh);
+const oppRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.10, 0.112, 48),
+  new THREE.MeshBasicMaterial({ color:0xd4af37, side:THREE.DoubleSide })
+);
+oppRing.position.z = 0.001;
+oppGroup.add(oppRing);
+function setOpponent(name) {
+  const img = new Image();
+  img.onload = () => {
+    oppCtx.clearRect(0, 0, 256, 256);
+    oppCtx.drawImage(img, 0, 0, 256, 256);
+    oppTex.needsUpdate = true;
+  };
+  img.src = OPP_HEADS[name];
+  oppGroup.userData.name = name;
+}
+setOpponent(OPP_ORDER[Math.floor(Math.random() * OPP_ORDER.length)]);
+const _oppBaseY = 1.15;
+
 // Three.js hand objects — the right way, with visible meshes
 const handFactory = new XRHandModelFactory();
 const xrHands = [renderer.xr.getHand(0), renderer.xr.getHand(1)];
@@ -346,9 +389,15 @@ enterBtn.addEventListener('click', async () => {
 });
 
 // ============ animation loop — nothing but render ============
+let _floatT = 0;
 renderer.setAnimationLoop(() => {
   try { checkTouchables(); } catch(e) {}
   try { updateFingertips(); } catch(e) {}
+  _floatT += 0.016;
+  try {
+    oppGroup.position.y = _oppBaseY + Math.sin(_floatT * 1.5) * 0.015;
+    oppGroup.lookAt(camera.position);
+  } catch(e) {}
   blinkT += 0.05;
   const hand0 = getFingertip(0, _v), hand1 = getFingertip(1, _v);
   if (hand0 || hand1) {
