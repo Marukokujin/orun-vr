@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimal AR Test</title>
+<style>body{margin:0;background:#000;color:#0f0;font-family:sans-serif}
+#ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+button{font-size:24px;padding:16px 32px;margin:10px}</style>
+<script type="importmap">{ "imports": {
+"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head><body>
+<div id="ui"><h1>MINIMAL AR</h1><button id="go">ENTER AR</button><div id="st"></div></div>
+<script type="module">
+import * as THREE from 'three';
+const st = document.getElementById('st');
+st.textContent = 'JS running, THREE loaded';
+document.getElementById('go').addEventListener('click', async () => {
+  st.textContent = 'Checking XR...';
+  if (!navigator.xr) { st.textContent = 'No navigator.xr'; return; }
+  const ok = await navigator.xr.isSessionSupported('immersive-ar').catch(e => 'err:'+e.message);
+  st.textContent = 'AR supported: ' + ok;
+  if (ok === true) {
+    try {
+      const s = await navigator.xr.requestSession('immersive-ar', {requiredFeatures:['local-floor']});
+      st.textContent = 'Session started!';
+    } catch(e) { st.textContent = 'Session failed: ' + e.message; }
+  }
+});
+</script></body></html>
