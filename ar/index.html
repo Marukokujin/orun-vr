@@ -30,7 +30,7 @@
 <body>
 <div id="app"></div>
 <div id="overlay">
-  <h1>ORUN — TABLE AR v18</h1>
+  <h1>ORUN — TABLE AR v19</h1>
   <p>Green table in your room. SETTINGS on the table: position + table color + hand color.</p>
   <button id="enterAR">ENTER AR</button>
   <div id="status"></div>
@@ -277,82 +277,38 @@ handStyles.forEach(([label, style, btnCol], i) => {
   addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
     0.06, () => { handStyle = style; applyHandStyle(); });
 });
-// Materials section
-const matLabel = makeLabel('MATERIAL');
-matLabel.position.set(0, 0.001, -0.23);
-adjGroup.add(matLabel);
-const MATERIALS = [
-  ['FELT',   { roughness:1.0, metalness:0.0, transparent:false, opacity:1.0 }],
-  ['COTTON', { roughness:0.9, metalness:0.0, transparent:false, opacity:1.0 }],
-  ['WOOD',   { roughness:0.6, metalness:0.1, transparent:false, opacity:1.0 }],
-  ['METAL',  { roughness:0.3, metalness:0.9, transparent:false, opacity:1.0 }],
-  ['SHINY',  { roughness:0.1, metalness:0.5, transparent:false, opacity:1.0 }],
-  ['GLASS',  { roughness:0.05, metalness:0.0, transparent:true, opacity:0.5 }],
-  ['MIRROR', { roughness:0.0, metalness:1.0, transparent:false, opacity:1.0 }],
-];
-MATERIALS.forEach(([label, props], i) => {
-  const b = makeButton(label, 0x888888);
-  b.scale.set(0.7, 0.7, 0.7);
-  const cols = 4;
-  const row = Math.floor(i / cols), col = i % cols;
-  b.position.set(-0.18 + col * 0.12, 0, -0.28 - row * 0.08);
-  adjGroup.add(b);
-  addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
-    0.05, () => {
-      felt.material.roughness = props.roughness;
-      felt.material.metalness = props.metalness;
-      felt.material.transparent = props.transparent;
-      felt.material.opacity = props.opacity;
-      felt.material.needsUpdate = true;
-    });
-});
-// Procedural textures
-function makeDirtTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = '#5a3a22'; x.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 800; i++) {
-    const s = Math.random();
-    x.fillStyle = s < 0.5 ? '#4a2e1a' : (s < 0.8 ? '#6b4a2e' : '#7a5a3a');
-    x.fillRect(Math.random()*256, Math.random()*256, 2+Math.random()*4, 2+Math.random()*4);
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2);
-  return t;
-}
-function makeCoffeeTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = '#3a2415'; x.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 40; i++) {
-    const bx = Math.random()*256, by = Math.random()*256, r = 12+Math.random()*10;
-    x.save(); x.translate(bx, by); x.rotate(Math.random()*Math.PI);
-    x.fillStyle = '#5c3a20';
-    x.beginPath(); x.ellipse(0, 0, r, r*0.7, 0, 0, Math.PI*2); x.fill();
-    x.strokeStyle = '#2a1a0e'; x.lineWidth = 3;
-    x.beginPath(); x.moveTo(-r*0.8, 0); x.quadraticCurveTo(0, r*0.3, r*0.8, 0); x.stroke();
-    x.restore();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 2);
-  return t;
-}
-const dirtTex = makeDirtTexture();
-const coffeeTex = makeCoffeeTexture();
-const texLabel = makeLabel('TEXTURE');
-texLabel.position.set(0, 0.001, -0.42);
-adjGroup.add(texLabel);
-const TEXTURES = [['DIRT', dirtTex], ['COFFEE', coffeeTex], ['PLAIN', null]];
-TEXTURES.forEach(([label, tex], i) => {
-  const b = makeButton(label, 0x8a6a4a);
-  b.scale.set(0.7, 0.7, 0.7);
-  b.position.set(-0.12 + i * 0.12, 0, -0.47);
-  adjGroup.add(b);
-  addTouchable(() => { const v = new THREE.Vector3(); b.getWorldPosition(v); return v; },
-    0.05, () => {
-      felt.material.map = tex;
-      felt.material.needsUpdate = true;
-    });
+// Glass toggle (the keeper)
+const glassLabel = makeLabel('FINISH');
+glassLabel.position.set(0, 0.001, -0.23);
+adjGroup.add(glassLabel);
+const glassBtn = makeButton('GLASS', 0x88ccff);
+glassBtn.scale.set(0.7, 0.7, 0.7);
+glassBtn.position.set(-0.06, 0, -0.28);
+adjGroup.add(glassBtn);
+const solidBtn = makeButton('SOLID', 0x888888);
+solidBtn.scale.set(0.7, 0.7, 0.7);
+solidBtn.position.set(0.06, 0, -0.28);
+adjGroup.add(solidBtn);
+let isGlass = false;
+addTouchable(() => { const v = new THREE.Vector3(); glassBtn.getWorldPosition(v); return v; },
+  0.05, () => {
+    isGlass = true;
+    felt.material.transparent = true;
+    felt.material.opacity = 0.5;
+    felt.material.roughness = 0.05;
+    felt.material.metalness = 0.0;
+    felt.material.needsUpdate = true;
+  });
+addTouchable(() => { const v = new THREE.Vector3(); solidBtn.getWorldPosition(v); return v; },
+  0.05, () => {
+    isGlass = false;
+    felt.material.transparent = false;
+    felt.material.opacity = 1.0;
+    felt.material.roughness = 1.0;
+    felt.material.metalness = 0.0;
+    felt.material.needsUpdate = true;
+  });
+
 });
 
 let tableY = TABLE.topY, tableZ = TABLE.z, tableX = 0;
